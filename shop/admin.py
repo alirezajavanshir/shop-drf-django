@@ -1,37 +1,16 @@
 from django.contrib import admin
-from .models import Menu, MenuItem, Customer, Order
+from .models import MenuItem, Category
 
 
-class MenuItemInline(admin.TabularInline):
-    model = MenuItem
-    extra = 1  # تعداد آیتم‌های خالی جدید برای اضافه کردن
-
-
-class MenuAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug")
-    prepopulated_fields = {"slug": ("name",)}
-    inlines = [MenuItemInline]
-
-
+@admin.register(MenuItem)
 class MenuItemAdmin(admin.ModelAdmin):
-    list_display = ("name", "menu", "price", "available")
-    list_filter = ("available", "menu")
+    list_display = ("id", "name", "price", "slug")
     search_fields = ("name",)
+    prepopulated_fields = {"slug": ("name",)}
 
 
-class CustomerAdmin(admin.ModelAdmin):
-    list_display = ("first_name", "last_name", "email", "phone", "city")
-    search_fields = ("first_name", "last_name", "email")
-
-
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ("product", "customer", "quantity", "date", "status")
-    list_filter = ("status", "date")
-    search_fields = ("customer__first_name", "customer__last_name", "product__name")
-
-
-# ثبت مدل‌ها در ادمین
-admin.site.register(Menu, MenuAdmin)
-admin.site.register(MenuItem, MenuItemAdmin)
-admin.site.register(Customer, CustomerAdmin)
-admin.site.register(Order, OrderAdmin)
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "slug")
+    search_fields = ("name",)
+    prepopulated_fields = {"slug": ("name",)}
