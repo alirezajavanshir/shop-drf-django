@@ -6,7 +6,7 @@ User = get_user_model()
 
 class OTPLoginSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=15)
-    otp_code = serializers.CharField(max_length=6, required=False)
+    otp_code = serializers.CharField(max_length=6)
 
 
 class AddressUpdateSerializer(serializers.ModelSerializer):

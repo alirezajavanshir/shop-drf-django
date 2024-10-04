@@ -1,4 +1,3 @@
-# comments/urls.py
 from django.urls import path
 from .views import CommentListCreateView, CommentDetailView
 
