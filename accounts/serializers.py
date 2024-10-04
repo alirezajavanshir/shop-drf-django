@@ -1,15 +1,14 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from .models import CustomUser
 
 
-class OTPLoginSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(max_length=15)
-    otp_code = serializers.CharField(max_length=6)
-
-
-class AddressUpdateSerializer(serializers.ModelSerializer):
+class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
+        model = CustomUser
+        fields = ["phone_number", "address", "postal_code"]
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
         fields = ["address", "postal_code"]

@@ -1,118 +1,93 @@
-from rest_framework.views import APIView
+from django.core.cache import cache
+from rest_framework import generics, views
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import authenticate, login, logout
-from django.core.cache import cache
-from django.contrib.auth import get_user_model
-from .serializers import (
-    UserRegistrationSerializer,
-    OTPVerifySerializer,
-    LoginSerializer,
-)
+from .models import CustomUser
+from .serializers import UserRegistrationSerializer, UserProfileUpdateSerializer
 import random
 
-User = get_user_model()
+
+class UserRegistrationView(generics.CreateAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserRegistrationSerializer
 
 
-class UserRegistrationView(APIView):
+class UserProfileUpdateView(generics.UpdateAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserProfileUpdateSerializer
+    permission_classes = [IsAuthenticated]
 
+    def get_object(self):
+        return self.request.user
+
+
+class SendOtpView(views.APIView):
     def post(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            phone_number = serializer.validated_data["phone_number"]
-            # تولید کد تصادفی OTP
-            otp_code = random.randint(1000, 9999)
-            # ذخیره کردن OTP در کش برای 5 دقیقه
+        phone_number = request.data.get("phone_number")
+        try:
+            user = CustomUser.objects.get(phone_number=phone_number)
+            otp_code = str(random.randint(1000, 9999))
             cache.set(phone_number, otp_code, timeout=300)
-            # ارسال کد OTP به شماره تلفن
-            # اینجا باید کد ارسال OTP توسط SMS قرار بگیرد
-            # send_otp(otp_code, phone_number)
-
-            # ذخیره اطلاعات کاربر در سشن برای استفاده بعد از تایید کد
-            request.session["user_registration_info"] = serializer.validated_data
-
+            print(phone_number, "----", otp_code)
             return Response(
-                {"message": "OTP sent successfully"}, status=status.HTTP_201_CREATED
+                {"message": "کد OTP با موفقیت ارسال شد."}, status=status.HTTP_200_OK
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"error": "کاربر وجود ندارد."}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
-class OTPVerifyView(APIView):
-
+class VerifyOtpView(views.APIView):
     def post(self, request):
-        serializer = OTPVerifySerializer(data=request.data)
-        if serializer.is_valid():
-            phone_number = serializer.validated_data["phone_number"]
-            entered_code = serializer.validated_data["code"]
+        phone_number = request.data.get("phone_number")
+        otp_code = request.data.get("otp_code")
 
-            # گرفتن کد OTP از کش
-            cached_code = cache.get(phone_number)
+        cached_otp = cache.get(phone_number)
 
-            if cached_code is None:
-                return Response(
-                    {"error": "OTP expired or invalid"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if str(cached_code) != entered_code:
-                return Response(
-                    {"error": "Invalid OTP code"}, status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # اگر OTP درست بود، کاربر ثبت‌نام می‌شود
-            user_data = request.session.get("user_registration_info")
-            if not user_data:
-                return Response(
-                    {"error": "No registration information found"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            user = User.objects.create_user(
-                phone_number=user_data["phone_number"],
-                email=user_data["email"],
-                first_name=user_data["first_name"],
-                last_name=user_data["last_name"],
-                password=user_data["password"],
-            )
-
-            # کاربر لاگین می‌شود
-            login(request, user)
-
-            # پاک کردن اطلاعات سشن و OTP
-            del request.session["user_registration_info"]
-            cache.delete(phone_number)
-
+        if cached_otp is None:
             return Response(
-                {"message": "User registered and logged in successfully"},
-                status=status.HTTP_200_OK,
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class LoginView(APIView):
-
-    def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            phone_number = serializer.validated_data["phone_number"]
-            password = serializer.validated_data["password"]
-            user = authenticate(request, phone_number=phone_number, password=password)
-            if user is not None:
-                login(request, user)
-                return Response(
-                    {"message": "Login successful"}, status=status.HTTP_200_OK
-                )
-            return Response(
-                {"error": "Invalid phone number or password"},
+                {"error": "کد OTP منقضی شده یا ارسال نشده است."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if cached_otp == otp_code:
+            user, created = CustomUser.objects.get_or_create(phone_number=phone_number)
+            if created:
+                return Response(
+                    {"message": "کد OTP تأیید شد. لطفاً ثبت‌نام خود را کامل کنید."},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"message": "کاربر قبلاً وجود دارد."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {"error": "کد OTP نامعتبر است."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
-class LogoutView(APIView):
-
+class CompleteRegistrationView(views.APIView):
     def post(self, request):
-        logout(request)
-        return Response(
-            {"message": "Logged out successfully"}, status=status.HTTP_200_OK
-        )
+        phone_number = request.data.get("phone_number")
+        address = request.data.get("address")
+        postal_code = request.data.get("postal_code")
+
+        try:
+            user = CustomUser.objects.get(phone_number=phone_number)
+            user.address = address
+            user.postal_code = postal_code
+            user.otp_verified = True  # یا هر فیلدی که نیاز دارید
+            user.save()
+            cache.delete(phone_number)  # حذف OTP از کش
+            return Response(
+                {"message": "ثبت‌نام با موفقیت کامل شد."},
+                status=status.HTTP_200_OK,
+            )
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"error": "کاربر وجود ندارد."}, status=status.HTTP_404_NOT_FOUND
+            )

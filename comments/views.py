@@ -4,15 +4,13 @@ from .serializers import CommentSerializer
 
 
 class CommentListCreateView(generics.ListCreateAPIView):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Comment.objects.all().order_by("-created_at")
+        menu_item_id = self.kwargs["menu_item_id"]
+        return Comment.objects.filter(menu_item_id=menu_item_id)
 
-
-class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(user=user)

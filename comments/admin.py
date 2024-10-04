@@ -2,8 +2,10 @@ from django.contrib import admin
 from .models import Comment
 
 
-@admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "created_at", "updated_at")
-    search_fields = ("user__phone_number", "content")
-    list_filter = ("created_at",)
+    list_display = ("menu_item", "user", "content", "created_at")
+    list_filter = ("menu_item", "user")
+    search_fields = ("content",)
+
+
+admin.site.register(Comment, CommentAdmin)

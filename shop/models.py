@@ -19,7 +19,7 @@ class MenuItem(models.Model):
 
     def save(self, *args, **kwargs):
         slug = ""
-        for char in self.title:
+        for char in self.name:  # تغییر title به name
             if char.isalpha():
                 slug += char
             elif char == " ":
@@ -40,10 +40,24 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         slug = ""
-        for char in self.title:
+        for char in self.name:  # تغییر title به name
             if char.isalpha():
                 slug += char
             elif char == " ":
                 slug += "-"
         self.slug = slug
         super().save(*args, **kwargs)
+
+
+class Rating(models.Model):
+    product = models.ForeignKey(
+        MenuItem, on_delete=models.CASCADE, related_name="ratings"
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    score = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ("product", "user")
+
+    def __str__(self):
+        return f"{self.user.username} امتیاز {self.product.name} را با {self.score} داد"
