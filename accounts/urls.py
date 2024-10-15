@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     UserRegistrationView,
-    UserProfileUpdateView,
+    UserProfileView,
     SendOtpView,
     VerifyOtpView,
     CompleteRegistrationView,
@@ -9,7 +9,6 @@ from .views import (
 
 urlpatterns = [
     path("register/", UserRegistrationView.as_view(), name="register"),
-    path("profile/update/", UserProfileUpdateView.as_view(), name="profile_update"),
     path("send-otp/", SendOtpView.as_view(), name="send_otp"),
     path("verify-otp/", VerifyOtpView.as_view(), name="verify_otp"),
     path(
@@ -17,4 +16,5 @@ urlpatterns = [
         CompleteRegistrationView.as_view(),
         name="complete_registration",
     ),
+    path("profile/", UserProfileView.as_view(), name="user-profile"),
 ]

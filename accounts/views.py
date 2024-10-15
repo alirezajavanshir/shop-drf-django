@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from .models import CustomUser
-from .serializers import UserRegistrationSerializer, UserProfileUpdateSerializer
+from .serializers import UserRegistrationSerializer, UserProfileSerializer
 import random
 
 
@@ -13,9 +13,9 @@ class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
 
 
-class UserProfileUpdateView(generics.UpdateAPIView):
+class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = CustomUser.objects.all()
-    serializer_class = UserProfileUpdateSerializer
+    serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):

@@ -40,6 +40,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     otp_code = models.CharField(
         max_length=6, blank=True, null=True, verbose_name="کد OTP"
     )
+    first_name = models.CharField(max_length=30, null=True, blank=True)
+    last_name = models.CharField(max_length=30, null=True, blank=True)
     otp_verified = models.BooleanField(default=False, verbose_name="تأیید شده OTP")
 
     USERNAME_FIELD = "phone_number"
@@ -47,6 +49,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
-    def generate_otp(self):
-        self.otp_code = str(random.randint(1000, 9999))
-        self.save()
+    def is_profile_complete(self):
+        return all(
+            [
+                self.phone_number,
+                self.address,
+                self.postal_code,
+                self.first_name,
+                self.last_name,
+            ]
+        )
+
+    def __str__(self):
+        return self.phone_number
