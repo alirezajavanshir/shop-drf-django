@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from shop.models import MenuItem
+from shop.models import Product
 from django.conf import settings
 
 User = get_user_model()
@@ -8,7 +8,7 @@ User = get_user_model()
 
 class Comment(models.Model):
     menu_item = models.ForeignKey(
-        MenuItem, related_name="comments", on_delete=models.CASCADE
+        Product, related_name="comments", on_delete=models.CASCADE
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True

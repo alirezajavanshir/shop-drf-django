@@ -1,8 +1,8 @@
 from django.contrib import admin
-from .models import MenuItem, Category, Rating
+from .models import Product, Category, Rating
 
 
-@admin.register(MenuItem)
+@admin.register(Product)
 class MenuItemAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "price", "slug")
     search_fields = ("name",)

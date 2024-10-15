@@ -23,15 +23,19 @@ class RatingSerializer(serializers.ModelSerializer):
 class DiscountCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiscountCode
-        fields = ["code", "discount_percent", "user", "is_active", "used", "created_at"]
+        fields = "__all__"
 
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = serializers.StringRelatedField()
+    total_price = serializers.SerializerMethodField()  # اضافه کردن این خط
 
     class Meta:
         model = CartItem
-        fields = ["product", "quantity", "get_total_price"]
+        fields = ["product", "quantity", "total_price"]  # "get_total_price" را حذف کنید
+
+    def get_total_price(self, obj):
+        return obj.product.price * obj.quantity  # محاسبه قیمت کل
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -44,4 +48,7 @@ class CartSerializer(serializers.ModelSerializer):
         fields = ["id", "items", "discount_code", "total_price", "created_at"]
 
     def get_total_price(self, obj):
-        return obj.get_total_price()
+        total = sum(item.product.price * item.quantity for item in obj.items.all())
+        if obj.discount_code and not obj.discount_code.is_used:
+            total *= 1 - (obj.discount_code.percentage / 100)
+        return total
