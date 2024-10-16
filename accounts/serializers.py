@@ -1,81 +1,61 @@
 from rest_framework import serializers
-from .models import CustomUser
-from django.core.cache import cache
-import random
+from .models import CustomUser, OtpCode
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import make_password
 
 
 class PhoneNumberSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(required=True, max_length=15)
+    phone_number = serializers.CharField(max_length=11)
 
 
-class UserRegistrationSerializer(serializers.ModelSerializer):
+class RegisterSerializer(serializers.ModelSerializer):
+    password1 = serializers.CharField(max_length=250)
+    otp = serializers.CharField(max_length=4)
+
     class Meta:
-        model = CustomUser
-        fields = ["first_name", "last_name", "phone_number", "address", "postal_code"]
+        model = get_user_model()
+        fields = ["phone_number", "password", "password1", "otp"]
 
-    def validate_phone_number(self, value):
-        if CustomUser.objects.filter(phone_number=value).exists():
-            raise serializers.ValidationError("این شماره تلفن قبلاً ثبت شده است.")
-        return value
+    def validate(self, attrs):
+        phone = attrs.get("phone_number")
+        otp = attrs.get("otp")
+        code = OtpCode.objects.filter(phone_number=phone, code=otp).last()
 
-    def create(self, validated_data):
-        # تولید کد OTP و ذخیره آن در کش
-        otp_code = str(random.randint(1000, 9999))
-        cache.set(validated_data["phone_number"], otp_code, timeout=300)
+        if not code:
+            raise serializers.ValidationError({"خطا": "کد OTP نادرست است."})
 
-        user = CustomUser(**validated_data)
-        user.save()
-        return user
+        if attrs.get("password1") != attrs.get("password"):
+            raise serializers.ValidationError({"خطا": "رمز عبور مطابقت ندارد."})
 
+        try:
+            validate_password(attrs.get("password"))
+        except ValidationError as e:
+            raise serializers.ValidationError({"خطا": f"{e}"})
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ["first_name", "last_name", "phone_number", "address", "postal_code"]
-        read_only_fields = ["phone_number"]
+        return super().validate(attrs)
 
-    def validate(self, data):
-        # بررسی تکمیل بودن اطلاعات
-        if not all(
-            [
-                data.get("first_name"),
-                data.get("last_name"),
-                data.get("address"),
-                data.get("postal_code"),
-            ]
-        ):
-            raise serializers.ValidationError("تمامی فیلدها باید تکمیل شوند.")
-        return data
-
-
-class CompleteRegistrationSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(required=True, max_length=15)
-    address = serializers.CharField(required=True)
-    postal_code = serializers.CharField(required=True)
-    otp_code = serializers.CharField(required=True, max_length=6)
-
-    def validate(self, data):
-        user = CustomUser.objects.filter(phone_number=data["phone_number"]).first()
-        if not user:
-            raise serializers.ValidationError("کاربری با این شماره تلفن پیدا نشد.")
-
-        # بررسی کد OTP از کش
-        cached_otp = cache.get(data["phone_number"])
-        if cached_otp is None or cached_otp != data["otp_code"]:
-            raise serializers.ValidationError("کد OTP نادرست است یا منقضی شده است.")
-
-        return data
+    def create(self, validate_data):
+        validate_data.pop("password1")
+        validate_data.pop("otp")
+        validate_data["password"] = make_password(validate_data["password"])
+        return super().create(validate_data)
 
 
 class LoginSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(required=True, max_length=15)
-    password = serializers.CharField(required=True, write_only=True)
+    phone_number = serializers.CharField(required=True)
+    password = serializers.CharField(required=True)
 
     def validate(self, attrs):
         phone_number = attrs.get("phone_number")
         password = attrs.get("password")
 
-        if not CustomUser.objects.filter(phone_number=phone_number).exists():
+        user = CustomUser.objects.filter(phone_number=phone_number).first()
+        if user is None:
             raise serializers.ValidationError("کاربری با این شماره تلفن پیدا نشد.")
+
+        if not user.check_password(password):
+            raise serializers.ValidationError("رمز عبور نادرست است.")
 
         return attrs

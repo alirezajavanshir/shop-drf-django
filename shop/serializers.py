@@ -1,54 +1,71 @@
 from rest_framework import serializers
-from .models import Product, Category, Rating, DiscountCode, Cart, CartItem
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Product
-        fields = ["id", "name", "description", "price", "slug"]
+from .models import Category, Product, Rating, Cart, CartItem, Discount
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["id", "name", "slug"]
+        fields = "__all__"
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = "__all__"
 
 
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = ["product", "score"]
-
-
-class DiscountCodeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DiscountCode
         fields = "__all__"
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product = serializers.StringRelatedField()
-    total_price = serializers.SerializerMethodField()  # اضافه کردن این خط
-
     class Meta:
         model = CartItem
-        fields = ["product", "quantity", "total_price"]  # "get_total_price" را حذف کنید
-
-    def get_total_price(self, obj):
-        return obj.product.price * obj.quantity  # محاسبه قیمت کل
+        fields = "__all__"
 
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True)
-    discount_code = DiscountCodeSerializer(read_only=True)
-    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
-        fields = ["id", "items", "discount_code", "total_price", "created_at"]
+        fields = "__all__"
 
-    def get_total_price(self, obj):
-        total = sum(item.product.price * item.quantity for item in obj.items.all())
-        if obj.discount_code and not obj.discount_code.is_used:
-            total *= 1 - (obj.discount_code.percentage / 100)
-        return total
+    def create(self, validated_data):
+        items_data = validated_data.pop("items")
+        cart = Cart.objects.create(**validated_data)
+        for item_data in items_data:
+            CartItem.objects.create(cart=cart, **item_data)
+        return cart
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop("items")
+        instance.save()
+        for item_data in items_data:
+            item_id = item_data.get("id", None)
+            if item_id:
+                item = CartItem.objects.get(id=item_id, cart=instance)
+                item.quantity = item_data.get("quantity", item.quantity)
+                item.save()
+            else:
+                CartItem.objects.create(cart=instance, **item_data)
+        return instance
+
+
+class DiscountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Discount
+        fields = "__all__"
+
+    def validate(self, attrs):
+        user = attrs.get("user")
+        discount_code = attrs.get("discountCode")
+
+        # بررسی اینکه آیا کاربر قبلاً از این کد تخفیف استفاده کرده یا نه
+        if Discount.objects.filter(
+            user=user, discountCode=discount_code, used=True
+        ).exists():
+            raise serializers.ValidationError("این کد تخفیف قبلاً استفاده شده است.")
+        return attrs
