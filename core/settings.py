@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "shop",
     "accounts",
-    "comments",
     "unidecode",
     "rest_framework",
     "django_extensions",

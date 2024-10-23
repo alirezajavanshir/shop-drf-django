@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, Rating, Cart, CartItem, Discount
+from .models import Category, Product, Rating, Discount  # , Cart, CartItem
 
 
 class CategoryAdmin(admin.ModelAdmin):
@@ -19,6 +19,8 @@ class RatingAdmin(admin.ModelAdmin):
     search_fields = ("user__username",)  # جستجو بر اساس نام کاربر
 
 
+"""
+
 class CartAdmin(admin.ModelAdmin):
     list_display = (
         "user",
@@ -31,6 +33,8 @@ class CartAdmin(admin.ModelAdmin):
 class CartItemAdmin(admin.ModelAdmin):
     list_display = ("cart", "product", "quantity")  # نمایش سبد خرید، محصول و مقدار
     search_fields = ("product__name",)  # جستجو بر اساس نام محصول
+
+"""
 
 
 class DiscountAdmin(admin.ModelAdmin):
@@ -47,6 +51,6 @@ class DiscountAdmin(admin.ModelAdmin):
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Rating, RatingAdmin)
-admin.site.register(Cart, CartAdmin)
-admin.site.register(CartItem, CartItemAdmin)
+# admin.site.register(Cart, CartAdmin)
+# admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(Discount, DiscountAdmin)

@@ -1,11 +1,11 @@
 from rest_framework import permissions, viewsets
-from .models import Category, Product, Rating, Cart, CartItem, Discount
+from .models import Category, Product, Rating, Discount  # Cart, CartItem
 from .serializers import (
     CategorySerializer,
     ProductSerializer,
     RatingSerializer,
-    CartSerializer,
-    CartItemSerializer,
+    # CartSerializer,
+    # CartItemSerializer,
     DiscountSerializer,
 )
 from django.core.exceptions import ValidationError
@@ -45,6 +45,7 @@ class RatingViewSet(viewsets.ModelViewSet):
     serializer_class = RatingSerializer
 
 
+"""
 class CartViewSet(viewsets.ModelViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
@@ -63,6 +64,8 @@ class CartItemViewSet(viewsets.ModelViewSet):
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
     permission_classes = [permissions.IsAuthenticated]  # کاربران باید لاگین کنند
+
+"""
 
 
 class DiscountViewSet(viewsets.ModelViewSet):

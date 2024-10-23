@@ -44,6 +44,7 @@ class Rating(models.Model):
         return f"{self.user.username} امتیاز {self.product.name} را با {self.score} داد"
 
 
+"""
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -60,6 +61,7 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} از {self.product.name}"
+"""
 
 
 class Discount(models.Model):

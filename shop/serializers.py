@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product, Rating, Cart, CartItem, Discount
+from .models import Category, Product, Rating, Discount  # Cart, CartItem,
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -20,6 +20,7 @@ class RatingSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+"""
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
@@ -52,6 +53,8 @@ class CartSerializer(serializers.ModelSerializer):
             else:
                 CartItem.objects.create(cart=instance, **item_data)
         return instance
+
+"""
 
 
 class DiscountSerializer(serializers.ModelSerializer):
